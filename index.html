@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>黄金跟踪周报</title>
+<style>
+  :root{
+    --bg:#f7f4ec; --card:#ffffff; --text:#2b2416; --muted:#7a6f58;
+    --gold:#b8860b; --gold-soft:#f3e7c4; --line:#e6dcc3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#16130d; --card:#211c13; --text:#f1e9d6; --muted:#a99c80;
+      --gold:#e0b44c; --gold-soft:#3a2f17; --line:#3a3222; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  header{padding:28px 16px 12px;max-width:1200px;margin:0 auto}
+  h1{margin:0;font-size:26px;letter-spacing:1px}
+  h1 span{color:var(--gold)}
+  .sub{color:var(--muted);margin-top:6px;font-size:14px}
+  .bar{max-width:1200px;margin:0 auto;padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+  .field{display:flex;flex-direction:column;gap:6px}
+  label{font-size:13px;color:var(--muted)}
+  select,input[type=date]{font-size:15px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
+    background:var(--card);color:var(--text);min-width:240px}
+  .btn{font-size:14px;padding:9px 14px;border-radius:8px;border:1px solid var(--gold);color:var(--gold);
+    background:transparent;text-decoration:none;cursor:pointer;white-space:nowrap}
+  .btn:hover{background:var(--gold-soft)}
+  .nav{display:flex;gap:8px}
+  .msg{max-width:1200px;margin:0 auto;padding:0 16px;color:var(--gold);font-size:14px;min-height:20px}
+  .weeks{max-width:1200px;margin:0 auto;padding:8px 16px;display:flex;gap:8px;overflow-x:auto}
+  .chip{flex:0 0 auto;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;
+    background:var(--card);color:var(--text);cursor:pointer}
+  .chip.on{background:var(--gold);border-color:var(--gold);color:#fff}
+  .viewer{max-width:1200px;margin:8px auto 24px;padding:0 16px}
+  iframe{width:100%;height:calc(100vh - 230px);min-height:520px;border:1px solid var(--line);
+    border-radius:10px;background:#fff}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:0 16px 24px}
+  @media (max-width:600px){ select,input[type=date]{min-width:0;width:100%} .field{flex:1 1 100%} }
+</style>
+</head>
+<body>
+<header>
+  <h1><span>■</span> 黄金跟踪周报</h1>
+  <div class="sub">选择周次，或选任意一个日期，即可查看那一周的周报</div>
+</header>
+
+<div class="bar">
+  <div class="field">
+    <label for="weekSel">选择周次</label>
+    <select id="weekSel"></select>
+  </div>
+  <div class="field">
+    <label for="dateSel">或选择日期</label>
+    <input type="date" id="dateSel">
+  </div>
+  <div class="nav">
+    <button class="btn" id="prev">← 上一期</button>
+    <button class="btn" id="next">下一期 →</button>
+    <a class="btn" id="open" target="_blank" rel="noopener">新窗口打开</a>
+  </div>
+</div>
+<div class="msg" id="msg"></div>
+<div class="weeks" id="chips"></div>
+<div class="viewer"><iframe id="frame" title="周报内容"></iframe></div>
+<footer>每周更新 · 内容仅供研究参考</footer>
+
+<script>
+/* ============================================================
+   【每周只需改这里】新增一期：把本期HTML放进 reports 文件夹，
+   命名为“周五日期.html”（如 2026-11-06.html），再在下面加一行。
+   start = 周一，end = 周五，file = 文件路径
+   ============================================================ */
+const WEEKS = [
+  { start: "2026-10-12", end: "2026-10-16", file: "reports/2026-10-16.html" },
+  { start: "2026-10-19", end: "2026-10-23", file: "reports/2026-10-23.html" },
+  { start: "2026-10-26", end: "2026-10-30", file: "reports/2026-10-30.html" },
+];
+/* ============================ 以下无需修改 ============================ */
+
+const list = WEEKS.slice().sort((a,b)=>b.start.localeCompare(a.start)); // 最新在前
+const $ = id => document.getElementById(id);
+const fmt = s => { const [y,m,d]=s.split("-"); return `${y}年${+m}月${+d}日`; };
+const label = w => `${fmt(w.start)} – ${fmt(w.end).replace(/^\d+年/,"")}`;
+let cur = 0;
+
+list.forEach((w,i)=>{
+  const o=document.createElement("option"); o.value=i; o.textContent=label(w); $("weekSel").appendChild(o);
+  const c=document.createElement("button"); c.className="chip"; c.textContent=w.start.slice(5).replace("-","/")+"–"+w.end.slice(5).replace("-","/");
+  c.onclick=()=>show(i); $("chips").appendChild(c);
+});
+
+function show(i, note){
+  cur=i; const w=list[i];
+  $("weekSel").value=i;
+  $("dateSel").value=w.end;
+  $("frame").src=w.file;
+  $("open").href=w.file;
+  $("prev").disabled = i>=list.length-1;
+  $("next").disabled = i<=0;
+  [...$("chips").children].forEach((c,k)=>c.classList.toggle("on",k===i));
+  $("msg").textContent = note || "";
+  history.replaceState(null,"","#"+w.end);
+}
+
+$("weekSel").onchange = e => show(+e.target.value);
+$("prev").onclick = () => cur<list.length-1 && show(cur+1);
+$("next").onclick = () => cur>0 && show(cur-1);
+
+// 选任意日期：找到包含该日期的那一周（周一至周日都算）；没有就给最近一期
+$("dateSel").onchange = e => {
+  const d=e.target.value; if(!d) return;
+  const day = s => new Date(s+"T00:00:00");
+  let i = list.findIndex(w => d>=w.start && (day(d)-day(w.start))/864e5 < 7);
+  if(i>=0) return show(i);
+  let best=0, gap=Infinity;
+  list.forEach((w,k)=>{ const g=Math.abs(day(d)-day(w.start)); if(g<gap){gap=g;best=k;} });
+  show(best, `${fmt(d)} 所在周暂无周报，已为您显示最接近的一期`);
+};
+
+// 打开时：网址带 #2026-10-23 就显示那期，否则显示最新一期
+const h=location.hash.slice(1);
+const hi=list.findIndex(w=>w.end===h||w.start===h);
+show(hi>=0?hi:0);
+</script>
+</body>
+</html>
